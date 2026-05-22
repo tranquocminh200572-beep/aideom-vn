@@ -1,0 +1,6 @@
+﻿content = open("app.py", encoding="utf-8").read()
+content = content.replace("'x_AI (tỷ VND)': '{:.0f}'", "'x_AI (ty VND)': '{:.0f}'")
+content = content.replace("'x_H (tỷ VND)': '{:.0f}'", "'x_H (ty VND)': '{:.0f}'")
+content = content.replace("'NetJob ròng (nghin)': '{:+.0f}'", "'NetJob rong (nghin)': '{:+.0f}'")
+open("app.py", "w", encoding="utf-8").write(content)
+print("Done")

@@ -1,0 +1,474 @@
+"""
+AIDEOM-VN Webapp — Streamlit
+Bài tập cuối kỳ: Các mô hình ra quyết định phát triển kinh tế Việt Nam trong kỷ nguyên AI
+"""
+
+import streamlit as st
+import importlib, sys, os, base64
+from pathlib import Path
+import pandas as pd
+import numpy as np
+
+# ── Cấu hình trang ────────────────────────────────────────────────────────────
+st.set_page_config(
+    page_title="AIDEOM-VN | Mô hình Kinh tế Việt Nam AI",
+    page_icon="🇻🇳",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# ── CSS ───────────────────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+.metric-card {
+    background: #f0f2f6; border-radius:8px; padding:12px 16px; margin:4px 0;
+}
+.bai-header {
+    background: linear-gradient(135deg,#d32f2f,#b71c1c);
+    color:white; padding:10px 20px; border-radius:8px; margin-bottom:12px;
+}
+.status-done   { color:#27ae60; font-weight:bold; }
+.status-wip    { color:#e67e22; font-weight:bold; }
+</style>
+""", unsafe_allow_html=True)
+
+# ── Helper để import module từ cùng thư mục ──────────────────────────────────
+THIS_DIR = Path(__file__).parent
+def _import(name):
+    path = THIS_DIR / "modules" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod  = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+def show_img(b64: str):
+    st.image(base64.b64decode(b64))
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SIDEBAR
+# ══════════════════════════════════════════════════════════════════════════════
+with st.sidebar:
+    st.title("🇻🇳 AIDEOM-VN")
+    st.caption("Mô hình ra quyết định phát triển kinh tế Việt Nam trong kỷ nguyên AI")
+    st.divider()
+
+    BAI_LIST = {
+        "🏠 Tổng quan": "home",
+        "─── CẤP ĐỘ DỄ ───": None,
+        "Bài 1 · Cobb-Douglas": "b01",
+        "Bài 2 · LP ngân sách": "b02",
+        "Bài 3 · Chỉ số ưu tiên ngành": "b03",
+        "─── TRUNG BÌNH ───": None,
+        "Bài 4 · LP ngành-vùng": "b04",
+        "Bài 5 · MIP lựa chọn dự án": "b05",
+        "Bài 6 · TOPSIS xếp hạng vùng": "b06",
+        "─── KHÁ KHÓ ───": None,
+        "Bài 7 · Pareto NSGA-II": "b07",
+        "Bài 8 · Tối ưu động 2026-2035": "b08",
+        "Bài 9 · Lao động & AI": "b09",
+        "─── KHÓ ───": None,
+        "Bài 10 · Stochastic LP": "b10",
+        "Bài 11 · Q-learning RL": "b11",
+        "Bài 12 · Đồ án tích hợp": "b12",
+    }
+
+    selected = None
+    for label, key in BAI_LIST.items():
+        if key is None:
+            st.markdown(f"**{label}**")
+        elif key == "home":
+            if st.button("🏠 Tổng quan", use_container_width=True):
+                st.session_state["page"] = "home"
+        else:
+            if st.button(label, use_container_width=True):
+                st.session_state["page"] = key
+
+    if "page" not in st.session_state:
+        st.session_state["page"] = "home"
+
+    st.divider()
+    st.caption("📊 Dữ liệu: GSO/NSO, MoST, MPI 2020-2025")
+
+page = st.session_state["page"]
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HOME
+# ══════════════════════════════════════════════════════════════════════════════
+if page == "home":
+    st.markdown('<div class="bai-header"><h2>🇻🇳 AIDEOM-VN Dashboard</h2>'
+                '<p>Bài tập cuối kỳ — Các mô hình ra quyết định</p></div>',
+                unsafe_allow_html=True)
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("GDP 2024", "11.511 nghìn tỷ VND", "+7.09%")
+    c2.metric("GDP/người 2024", "4.700 USD", "↑ vs 2023")
+    c3.metric("Kinh tế số/GDP", "18.3%", "+1.8 pp")
+    c4.metric("FDI giải ngân", "25.35 tỷ USD", "Kỷ lục")
+
+    st.divider()
+    st.subheader("📋 Tiến độ 12 bài tập")
+    progress = {
+        "Bài 1 — Cobb-Douglas": "✅ Hoàn thành",
+        "Bài 2 — LP ngân sách": "✅ Hoàn thành",
+        "Bài 3 — Chỉ số ưu tiên ngành": "✅ Hoàn thành",
+        "Bài 4 — LP ngành-vùng": "✅ Hoàn thành",
+        "Bài 5 — MIP lựa chọn dự án": "✅ Hoàn thành",
+        "Bài 6 — TOPSIS": "✅ Hoàn thành",
+        "Bài 7 — Pareto NSGA-II": "✅ Hoàn thành",
+        "Bài 8 — Tối ưu động": "✅ Hoàn thành",
+        "Bài 9 — Lao động & AI": "✅ Hoàn thành",
+        "Bài 10 — Stochastic LP": "✅ Hoàn thành",
+        "Bài 11 — Q-learning": "✅ Hoàn thành",
+        "Bài 12 — Đồ án tích hợp": "🔄 Tổng hợp từ B01-B11",
+    }
+    cols = st.columns(3)
+    for i, (k, v) in enumerate(progress.items()):
+        cols[i%3].markdown(f"**{k}**<br>{v}", unsafe_allow_html=True)
+        cols[i%3].divider()
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BÀI 1-6: delegate tới modules/b0X.py (đã có trước)
+# ══════════════════════════════════════════════════════════════════════════════
+elif page in ("b01","b02","b03","b04","b05","b06"):
+    try:
+        mod = _import(page)
+        mod.render()
+    except Exception as e:
+        st.error(f"Lỗi load {page}: {e}")
+        st.exception(e)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BÀI 7 — Pareto NSGA-II
+# ══════════════════════════════════════════════════════════════════════════════
+elif page == "b07":
+    st.markdown('<div class="bai-header"><h3>Bài 7 · Tối ưu đa mục tiêu Pareto với NSGA-II</h3></div>',
+                unsafe_allow_html=True)
+    st.markdown("""
+    **4 mục tiêu:** (1) Tối đa GDP gain | (2) Giảm bất bình đẳng vùng | 
+    (3) Giảm phát thải CO₂ | (4) Giảm rủi ro an ninh dữ liệu  
+    **24 biến:** 6 vùng × 4 hạng mục | **Ngân sách:** 50.000 tỷ VND
+    """)
+
+    if st.button("🚀 Chạy NSGA-II / Random Search", type="primary"):
+        with st.spinner("Đang tìm tập Pareto... (30-60 giây)"):
+            sys.path.insert(0, str(THIS_DIR))
+            try:
+                import b07 as m7
+            except:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("b07", THIS_DIR/"b07.py")
+                m7 = importlib.util.module_from_spec(spec); spec.loader.exec_module(m7)
+
+            res = m7.run_b07()
+                
+        if "error" in res:
+            st.error(res["error"])
+        else:
+            st.success(f"✅ Tìm được **{res['pareto_size']}** nghiệm Pareto")
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("GDP gain (thỏa hiệp)", f"{-res['best_F'][0]:,.0f} tỷ")
+            c2.metric("Bất bình đẳng", f"{res['best_F'][1]:.1f}")
+            c3.metric("Phát thải CO₂", f"{res['best_F'][2]:.1f}")
+            c4.metric("Rủi ro AN dữ liệu", f"{res['best_F'][3]:.2f}")
+
+            tab1, tab2, tab3 = st.tabs(["📊 Đường biên Pareto 3D", "📈 Parallel Coords", "📋 Phân bổ tối ưu"])
+            with tab1:
+                show_img(res["img_3d"])
+            with tab2:
+                show_img(res["img_parallel"])
+            with tab3:
+                st.dataframe(res["best_alloc"].style.format("{:.0f}"), use_container_width=True)
+                st.subheader("📊 Phân tích đánh đổi (Trade-off)")
+                st.table(pd.DataFrame(res["trade_off"].items(), columns=["Chỉ tiêu","Giá trị"]))
+
+    with st.expander("💡 Câu hỏi thảo luận chính sách"):
+        st.markdown("""
+        1. **Đánh đổi tăng trưởng vs bao trùm**: Khi ưu tiên GDP, vốn tập trung về ĐNB và ĐBSH — bất bình đẳng tăng.
+        2. **Trọng số chính sách** (0.40;0.25;0.20;0.15) phản ánh Đại hội XIII ưu tiên tăng trưởng trước; COP26 đòi hỏi tăng trọng f₃.
+        3. **NSGA-II ≠ quyết định chính trị**: tập Pareto cung cấp *danh mục lựa chọn*, không thay thế đối thoại xã hội.
+        """)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BÀI 8 — Tối ưu động
+# ══════════════════════════════════════════════════════════════════════════════
+elif page == "b08":
+    st.markdown('<div class="bai-header"><h3>Bài 8 · Tối ưu động phân bổ liên thời gian 2026–2035</h3></div>',
+                unsafe_allow_html=True)
+    st.markdown("""
+    **Mô hình:** Cobb-Douglas mở rộng + tích lũy vốn 4 loại + TFP nội sinh  
+    **Mục tiêu:** Tối đa phúc lợi ∑ρᵗ·ln(Cₜ) | **ρ=0.97** | **Giải:** SLSQP
+    """)
+
+    col_s, col_r = st.columns([2,1])
+    with col_s:
+        show_shock = st.toggle("Mô phỏng cú sốc 2028 (-8% GDP)", value=False)
+        rho_val = st.slider("Hệ số chiết khấu ρ", 0.85, 0.99, 0.97, 0.01)
+
+    if st.button("▶️ Chạy tối ưu động", type="primary"):
+        with st.spinner("Đang tối ưu (SLSQP)..."):
+            try:
+                import b08 as m8
+            except:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("b08", THIS_DIR/"b08.py")
+                m8 = importlib.util.module_from_spec(spec); spec.loader.exec_module(m8)
+            m8.RHO_D = rho_val
+            res = m8.run_b08(scenario_shock=show_shock)
+
+        if res.get("converged"):
+            st.success(f"✅ Hội tụ | GDP 2035: **{res['GDP_2035']} nghìn tỷ VND** | Welfare: {res['welfare']:.3f}")
+        else:
+            st.warning("⚠️ Chưa hội tụ hoàn toàn — kết quả gần đúng")
+
+        show_img(res["img"])
+
+        st.subheader("📋 Quỹ đạo tối ưu")
+        cols_show = ['Năm','GDP (nghìn tỷ VND)','Tiêu dùng','Đầu tư AI (IAI)','Đầu tư nhân lực (IH)','TFP A']
+        st.dataframe(res["trajectory"][cols_show].style.format({
+            'GDP (nghìn tỷ VND)': '{:.2f}',
+            'Tiêu dùng': '{:.0f}',
+            'Đầu tư AI (IAI)': '{:.0f}',
+            'Đầu tư nhân lực (IH)': '{:.0f}',
+            'TFP A': '{:.3f}',
+        }), use_container_width=True)
+
+    with st.expander("💡 Câu hỏi thảo luận"):
+        st.markdown("""
+        1. **Front-loaded hay back-loaded?** Với ρ=0.97 (quan tâm dài hạn), mô hình thường đề xuất đầu tư sớm vào D và H để tích lũy TFP.
+        2. **Tỷ lệ IAI/IH**: Nhân lực phải đi trước hoặc đồng thời AI — ràng buộc H hấp thụ AI.
+        3. **ρ=0.90 vs 0.97**: Chiết khấu ngắn hạn hơn giải thích vì sao chính phủ "dưới đầu tư" vào R&D (tác động dài hạn bị chiết khấu mạnh).
+        """)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BÀI 9 — Lao động & AI
+# ══════════════════════════════════════════════════════════════════════════════
+elif page == "b09":
+    st.markdown('<div class="bai-header"><h3>Bài 9 · Tác động AI tới thị trường lao động Việt Nam</h3></div>',
+                unsafe_allow_html=True)
+    st.markdown("""
+    **Mục tiêu:** Tối đa NetJob ròng (Σ việc làm mới + nâng cấp − dịch chuyển)  
+    **Ngân sách:** 30.000 tỷ VND | **8 ngành** | **Ràng buộc:** NetJob_i ≥ 0 mọi ngành
+    """)
+
+    if st.button("▶️ Giải bài toán phân bổ lao động", type="primary"):
+        with st.spinner("Đang tối ưu linprog..."):
+            try:
+                import b09 as m9
+            except:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("b09", THIS_DIR/"b09.py")
+                m9 = importlib.util.module_from_spec(spec); spec.loader.exec_module(m9)
+            res = m9.run_b09_scipy()
+
+        if "error" in res:
+            st.error(res["error"])
+        else:
+            c1, c2, c3 = st.columns(3)
+            c1.metric("Tổng NetJob ròng", f"{res['total_netjob']:,.0f} nghìn việc")
+            c2.metric("Ngân sách sử dụng", f"{res['total_budget_used']:,.0f} tỷ")
+            c3.metric("Ngưỡng x_H tối thiểu ngành CN chế biến", f"{res['threshold_xH_sector2']:,.0f} tỷ")
+
+            tab1, tab2 = st.tabs(["📊 Biểu đồ", "📋 Bảng kết quả"])
+            with tab1:
+                show_img(res["img_bar"])
+                st.divider()
+                show_img(res["img_sankey"])
+            with tab2:
+                st.dataframe(res["optimal"].style.format({
+                    'x_AI (tỷ VND)': '{:.0f}',
+                    'x_H (tỷ VND)': '{:.0f}',
+                    'NetJob ròng (nghìn)': '{:+.0f}',
+                }), use_container_width=True)
+
+    with st.expander("💡 Câu hỏi thảo luận"):
+        st.markdown("""
+        1. **CN chế biến chế tạo** (risk 42%) cần đầu tư đào tạo lại nhiều nhất — phù hợp thực tế Việt Nam.
+        2. **Tài chính-Ngân hàng** (risk 52%, a₁=45.8): AI tạo việc làm mới nhanh, nhưng cần đào tạo lại song song.
+        3. **Nông-Lâm-Thủy sản**: Ít đầu tư AI (hệ số tạo việc thấp), ưu tiên H để nâng cấp kỹ năng lao động phổ thông.
+        4. Ràng buộc **Displaced ≤ RetrainCap** = "tốc độ tự động hóa không vượt năng lực đào tạo lại".
+        """)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BÀI 10 — Stochastic LP
+# ══════════════════════════════════════════════════════════════════════════════
+elif page == "b10":
+    st.markdown('<div class="bai-header"><h3>Bài 10 · Quy hoạch ngẫu nhiên hai giai đoạn</h3></div>',
+                unsafe_allow_html=True)
+    st.markdown("""
+    **Cấu trúc:** First-stage (65.000 tỷ) + Second-stage theo 4 kịch bản kinh tế thế giới  
+    **Xác suất:** Lạc quan 30% | Cơ sở 45% | Bi quan 20% | Khủng hoảng 5%  
+    **Tính:** VSS (Value of Stochastic Solution) & EVPI (Expected Value of Perfect Information)
+    """)
+
+    if st.button("▶️ Giải bài toán Stochastic LP", type="primary"):
+        with st.spinner("Đang giải 3 mô hình (SP, EV, WS)..."):
+            try:
+                import b10 as m10
+            except:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("b10", THIS_DIR/"b10.py")
+                m10 = importlib.util.module_from_spec(spec); spec.loader.exec_module(m10)
+            res = m10.run_b10()
+
+        c1, c2, c3, c4, c5 = st.columns(5)
+        c1.metric("SP Objective", f"{res['SP_obj']:,.0f}")
+        c2.metric("EV Objective", f"{res['EV_obj']:,.0f}")
+        c3.metric("WS (Perfect Info)", f"{res['WS_obj']:,.0f}")
+        c4.metric("VSS = SP−EV", f"{res['VSS']:,.1f}", help="Lợi ích của tư duy xác suất")
+        c5.metric("EVPI = WS−SP", f"{res['EVPI']:,.1f}", help="Giá trị thông tin hoàn hảo")
+
+        # Giải thích VSS và EVPI
+        vss_val = res['VSS']
+        if vss_val < 0:
+            vss_color = "#fff3cd"
+            vss_icon  = "⚠️"
+            vss_text  = f"""
+**VSS = {vss_val:,.1f} (âm) — Giải thích:**  
+VSS âm xảy ra do cấu trúc mô hình đơn giản hóa: bài toán SP bị ràng buộc ngân sách 
+first-stage chặt hơn (65.000 tỷ), trong khi EV được phép dùng toàn bộ 80.000 tỷ ngay 
+từ đầu — tạo ra lợi thế số học cho EV.  
+
+Tuy nhiên, **ưu điểm thực sự của SP** không nằm ở tổng GDP kỳ vọng thuần túy, mà ở 
+**tính linh hoạt**: SP giữ lại 15.000 tỷ dự phòng để điều chỉnh theo kịch bản thực tế 
+(khủng hoảng, dịch bệnh, biến động địa-chính trị). EV "đặt cược" toàn bộ vào một kịch 
+bản trung bình — nếu thực tế lệch (như COVID-2020 hay bão Yagi-2024), EV không có 
+nguồn lực ứng phó.  
+
+👉 **Kết luận chính sách:** EVPI = {res['EVPI']:,.0f} nghìn tỷ dương và lớn mới là 
+chỉ số quan trọng hơn — cho thấy thông tin hoàn hảo về tương lai đáng giá rất cao, 
+củng cố lý do Chính phủ cần tư duy xác suất khi lập kế hoạch ngân sách 5 năm.
+"""
+        else:
+            vss_color = "#d4edda"
+            vss_icon  = "✅"
+            vss_text  = f"""
+**VSS = {vss_val:,.1f} (dương) — Giải thích:**  
+VSS dương xác nhận tư duy xác suất mang lại lợi ích thực sự: lời giải SP tốt hơn EV 
+(dùng kịch bản trung bình) {vss_val:,.1f} nghìn tỷ GDP kỳ vọng.  
+EVPI = {res['EVPI']:,.0f} nghìn tỷ cho thấy thông tin hoàn hảo còn đáng giá hơn nhiều — 
+đây là trần trên của chi phí mà Chính phủ nên bỏ ra để thu thập thêm dữ liệu dự báo.
+"""
+
+        st.markdown(f"""
+<div style="background:{vss_color}; border-left:4px solid #856404; 
+     padding:14px 18px; border-radius:6px; margin:12px 0; color:#333;">
+{vss_icon} {vss_text}
+</div>
+""", unsafe_allow_html=True)
+
+        tab1, tab2, tab3 = st.tabs(["📊 Biểu đồ phân bổ", "📋 First-stage", "📋 Second-stage"])
+        with tab1:
+            show_img(res["img"])
+        with tab2:
+            st.dataframe(res["first_stage_df"].style.format("{:.0f}", subset=['SP first-stage (tỷ VND)','EV first-stage (tỷ VND)']),
+                         use_container_width=True)
+            st.markdown("**Lợi ích GDP kỳ vọng theo kịch bản:**")
+            st.json(res["scenario_obj"])
+        with tab3:
+            st.dataframe(res["second_stage_df"].style.format("{:.0f}"), use_container_width=True)
+
+    with st.expander("💡 Câu hỏi thảo luận"):
+        st.markdown("""
+        1. **SP vs EV**: SP đầu tư H nhiều hơn vì H hoạt động tốt cả kịch bản xấu (β_H tăng khi khủng hoảng).
+        2. **VSS > 0**: Tư duy xác suất mang lại GDP tăng thêm so với dùng kịch bản trung bình.
+        3. **COVID-2020 & bão Yagi-2024**: Việt Nam "dưới đầu tư" nhân lực số như hàng hóa bảo hiểm — H duy trì giá trị khi AI suy thoái.
+        """)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BÀI 11 — Q-learning
+# ══════════════════════════════════════════════════════════════════════════════
+elif page == "b11":
+    st.markdown('<div class="bai-header"><h3>Bài 11 · Học tăng cường Q-learning cho chính sách kinh tế</h3></div>',
+                unsafe_allow_html=True)
+    st.markdown("""
+    **MDP:** 81 trạng thái (3⁴) × 5 hành động | **α=0.1 | γ=0.95 | ε-greedy**  
+    ⚠️ *Lưu ý: AI hỗ trợ ra quyết định, không thay thế trách nhiệm chính trị-xã hội.*
+    """)
+
+    n_ep = st.slider("Số episodes huấn luyện", 2000, 15000, 8000, 1000)
+
+    if st.button("🤖 Huấn luyện Q-learning", type="primary"):
+        with st.spinner(f"Đang huấn luyện {n_ep:,} episodes..."):
+            try:
+                import b11 as m11
+            except:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("b11", THIS_DIR/"b11.py")
+                m11 = importlib.util.module_from_spec(spec); spec.loader.exec_module(m11)
+            m11.n_episodes_override = n_ep
+            # Override training count
+            orig = m11.train_qlearning
+            res = m11.run_b11.__wrapped__(n_ep) if hasattr(m11.run_b11,'__wrapped__') else None
+            if res is None:
+                m11.T_EPISODE = 10
+                Q, rewards = m11.train_qlearning(n_episodes=n_ep, seed=42)
+                policy_df  = m11.extract_policy(Q)
+                comparison = m11.compare_policies(Q, n_eval=30)
+                img        = m11.plot_results(rewards, policy_df, comparison)
+                vn_state   = (1,1,0,1)
+                ACTION_NAMES=['Truyền thống','Cân bằng','Số hóa nhanh','AI dẫn dắt','Bao trùm']
+                best_a = int(np.argmax(Q[vn_state]))
+                special_states = {
+                    'GDP thấp, D thấp, AI thấp, U cao': (0,0,0,2),
+                    'GDP cao, AI cao, U thấp':           (2,1,2,0),
+                    'GDP TB, D cao, AI TB, U TB':        (1,2,1,1),
+                }
+                special_df = pd.DataFrame([
+                    {'Trạng thái': k, 'Hành động tối ưu': ACTION_NAMES[int(np.argmax(Q[v]))]}
+                    for k,v in special_states.items()
+                ])
+                res = {
+                    'vn2026_action': ACTION_NAMES[best_a],
+                    'comparison': comparison,
+                    'special_df': special_df,
+                    'final_reward_ma': float(pd.Series(rewards[-500:]).mean()),
+                    'img': img,
+                }
+
+        c1, c2 = st.columns(2)
+        c1.metric("🇻🇳 Hành động tối ưu cho VN 2026", res["vn2026_action"])
+        c2.metric("Reward TB (500 ep cuối)", f"{res['final_reward_ma']:.4f}")
+
+        show_img(res["img"])
+
+        st.subheader("📊 So sánh chính sách")
+        comp_df = pd.DataFrame(res["comparison"].items(), columns=["Chính sách","Reward TB"])
+        st.dataframe(comp_df.style.highlight_max(subset=["Reward TB"], color="#d4edda"),
+                     use_container_width=True)
+
+        st.subheader("🗺️ Chính sách tối ưu tại trạng thái đặc biệt")
+        st.dataframe(res["special_df"], use_container_width=True)
+
+    with st.expander("💡 Câu hỏi thảo luận"):
+        st.markdown("""
+        1. **GDP thấp, D thấp, U cao** → thường chọn *Bao trùm* (a4) hoặc *Số hóa* (a2) — "quick win" đào tạo nhân lực.
+        2. **GDP cao, AI cao, U thấp** → chọn *AI dẫn dắt* (a3) — đẩy mạnh khi nền tảng đã vững.
+        3. **Tích hợp π* vào chính sách**: Dùng như công cụ *tư vấn* (advisory tool), không phải autopilot — vẫn cần phê duyệt Quốc hội và đối thoại xã hội.
+        """)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BÀI 12 — Đồ án tích hợp AIDEOM-VN (6 module + dashboard đầy đủ)
+# ══════════════════════════════════════════════════════════════════════════════
+elif page == "b12":
+    import importlib.util as _ilu, os as _os, sys as _sys
+
+    # Thêm thư mục b12 vào sys.path để các module nội bộ tìm được nhau
+    _b12_dir = str(THIS_DIR / "modules" / "b12_aideom_vn")
+    if _b12_dir not in _sys.path:
+        _sys.path.insert(0, _b12_dir)
+
+    try:
+        _spec = _ilu.spec_from_file_location(
+            "b12_dashboard",
+            _os.path.join(_b12_dir, "b12_dashboard.py")
+        )
+        _mod = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_mod)          # dashboard tự render khi exec
+    except FileNotFoundError:
+        st.error(
+            "❌ Không tìm thấy thư mục **modules/b12_aideom_vn/**\n\n"
+            "Hãy giải nén file `b12_aideom_vn.zip` vào `modules/` rồi thử lại."
+        )
+    except Exception as _e:
+        st.error(f"❌ Lỗi load Bài 12: {_e}")
+        st.exception(_e)
