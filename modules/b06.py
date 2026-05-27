@@ -329,7 +329,6 @@ def render():
         st.subheader("🏆 So sánh xếp hạng: Chuyên gia vs Entropy")
         fig1 = plot_ranking_bar(scores_expert, scores_entropy, region_names)
         st.plotly_chart(fig1, use_container_width=True)
-        plt.close(fig1)
 
         # ── Radar chart ──
         st.subheader("🕸️ Radar chart 6 vùng")
