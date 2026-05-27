@@ -55,6 +55,7 @@ COLORS = ['#1976D2','#388E3C','#F57C00','#7B1FA2','#D32F2F','#0097A7']
 
 
 def load_data():
+    """Load data từ xlsx. Luôn dùng REGION_NAMES hardcode để tránh lỗi encoding."""
     for search_path in [
         Path('data/vietnam_regions_2024.xlsx'),
         Path('/mnt/project/vietnam_regions_2024.xlsx'),
@@ -63,7 +64,8 @@ def load_data():
             try:
                 df = pd.read_excel(search_path)
                 X = df[CRITERIA].values.astype(float)
-                return X, df['region_name_vi'].tolist()
+                # Dùng REGION_NAMES hardcode thay vì đọc từ file (tránh lỗi encoding Excel)
+                return X, REGION_NAMES
             except Exception:
                 pass
     return DATA_FALLBACK.copy(), REGION_NAMES
