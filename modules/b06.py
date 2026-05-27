@@ -210,71 +210,72 @@ def plot_radar(X, w, region_names):
 
 
 def render():
-    st.header("Bai 6: TOPSIS Xep hang 6 Vung Kinh te theo Uu tien Dau tu AI")
+    st.header("🗺️ Bài 6: TOPSIS Xếp hạng 6 Vùng Kinh tế theo Ưu tiên Đầu tư AI")
 
-    with st.expander("Ly thuyet TOPSIS", expanded=False):
+    with st.expander("📖 Lý thuyết TOPSIS", expanded=False):
         st.markdown("""
         **TOPSIS** (Technique for Order of Preference by Similarity to Ideal Solution):
-        1. Chuan hoa vector
-        2. Ma tran co trong so
-        3. Ly tuong duong/am
-        4. Khoang cach Euclide
-        5. He so gan gui C* (cang gan 1 cang tot)
+        1. **Chuẩn hóa vector:** {ij} = x_{ij} / \sqrt{\sum_i x_{ij}^2}$
+        2. **Ma trận có trọng số:** {ij} = w_j \cdot r_{ij}$
+        3. **Lý tưởng dương** ^*$ = tốt nhất; **Lý tưởng âm** ^-$ = tệ nhất
+        4. **Khoảng cách Euclide:** ^* = \sqrt{\sum_j (v_{ij}-v_j^*)^2}$
+        5. **Hệ số gần gũi:** ^* = S_i^- / (S_i^* + S_i^-)$ — càng gần 1 càng tốt
         """)
 
     X, region_names = load_data()
 
-    st.subheader("Dieu chinh trong so chuyen gia")
-    st.caption("Tong trong so phai = 1.0 (tu dong chuan hoa)")
+    st.subheader("⚙️ Điều chỉnh trọng số chuyên gia")
+    st.caption("Tổng trọng số phải = 1.0 (tự động chuẩn hóa)")
 
     cols = st.columns(4)
     w_inputs  = []
     default_w = [0.10, 0.10, 0.15, 0.20, 0.15, 0.15, 0.05, 0.10]
-    crit_short = ['GRDP/nguoi', 'FDI', 'Digital Index', 'AI Readiness',
-                  'LD dao tao', 'R&D/GRDP', 'Internet', 'Gini']
+    crit_short = ['GRDP/người', 'FDI', 'Digital Index', 'AI Readiness',
+                  'LĐ đào tạo', 'R&D/GRDP', 'Internet', 'Gini (↓tốt)']
     for i, (label, dw) in enumerate(zip(crit_short, default_w)):
         with cols[i % 4]:
             w_inputs.append(st.number_input(label, 0.01, 0.60, dw, 0.01, key=f'w6_{i}'))
 
     w_user = np.array(w_inputs)
     w_user = w_user / w_user.sum()
+    st.caption(f"Trọng số sau chuẩn hóa: {np.round(w_user, 3).tolist()}")
 
-    if st.button("Chay TOPSIS & Phan tich", type="primary"):
+    if st.button("🚀 Chạy TOPSIS & Phân tích", type="primary"):
         scores_expert  = topsis(X, w_user, IS_BENEFIT)
         w_entropy      = entropy_weights(X)
         scores_entropy = topsis(X, w_entropy, IS_BENEFIT)
 
-        st.subheader("Ket qua TOPSIS")
+        st.subheader("📋 Kết quả TOPSIS")
         ranks_exp = len(region_names) - scores_expert.argsort().argsort()
         ranks_ent = len(region_names) - scores_entropy.argsort().argsort()
         short     = [shorten(n) for n in region_names]
 
         df_res = pd.DataFrame({
-            'Vung':           short,
-            'C* (chuyen gia)': np.round(scores_expert, 4),
-            'Hang (CG)':      ranks_exp,
-            'C* (Entropy)':   np.round(scores_entropy, 4),
-            'Hang (Entropy)': ranks_ent,
-            'Thay doi hang':  ranks_exp - ranks_ent,
-        }).sort_values('Hang (CG)')
+            'Vùng':              short,
+            'C* (chuyên gia)':   np.round(scores_expert, 4),
+            'Hạng (CG)':         ranks_exp,
+            'C* (Entropy)':      np.round(scores_entropy, 4),
+            'Hạng (Entropy)':    ranks_ent,
+            'Thay đổi hạng':     ranks_exp - ranks_ent,
+        }).sort_values('Hạng (CG)')
         st.dataframe(df_res, use_container_width=True)
 
-        st.subheader("Trong so Entropy (khach quan)")
+        st.subheader("📊 Trọng số Entropy (khách quan)")
         st.plotly_chart(plot_entropy_bar(w_entropy, crit_short),
                         use_container_width=True)
 
-        st.subheader("So sanh xep hang: Chuyen gia vs Entropy")
+        st.subheader("🏆 So sánh xếp hạng: Chuyên gia vs Entropy")
         st.plotly_chart(plot_ranking_bar(scores_expert, scores_entropy, region_names),
                         use_container_width=True)
 
-        st.subheader("Radar chart 6 vung")
+        st.subheader("🕸️ Radar chart 6 vùng")
         st.plotly_chart(plot_radar(X, w_user, region_names),
                         use_container_width=True)
 
-        st.subheader("Phan tich do nhay: Hang theo w_AI Readiness")
+        st.subheader("🔍 Phân tích độ nhạy: Hạng theo w_AI Readiness")
         st.plotly_chart(plot_sensitivity(X, region_names),
                         use_container_width=True)
 
         top3_exp   = np.argsort(scores_expert)[::-1][:3]
         top3_names = [short[i] for i in top3_exp]
-        st.info(f"Top 3 theo trong so chuyen gia: {', '.join(top3_names)}")
+        st.info(f"🎯 Top 3 theo trọng số chuyên gia: {', '.join(top3_names)}")
