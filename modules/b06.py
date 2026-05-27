@@ -22,12 +22,12 @@ IS_BENEFIT = [True, True, True, True, True, True, True, False]
 W_EXPERT = np.array([0.10, 0.10, 0.15, 0.20, 0.15, 0.15, 0.05, 0.10])
 
 REGION_SHORT = {
-    'Trung du miền núi phía Bắc': 'Trung du BB',
-    'Đồng bằng sông Hồng':        'DB song Hong',
-    'Bắc Trung Bộ + DH Trung Bộ': 'BTB+DHMT',
-    'Tây Nguyên':                  'Tay Nguyen',
-    'Đông Nam Bộ':                 'Dong Nam Bo',
-    'Đồng bằng sông Cửu Long':    'DB song CL',
+    'Trung du miền núi phía Bắc': 'Trung du MN Bắc',
+    'Đồng bằng sông Hồng':        'ĐB sông Hồng',
+    'Bắc Trung Bộ + DH Trung Bộ': 'BTB + DHMT',
+    'Tây Nguyên':                  'Tây Nguyên',
+    'Đông Nam Bộ':                 'Đông Nam Bộ',
+    'Đồng bằng sông Cửu Long':    'ĐB sông Cửu Long',
 }
 
 def shorten(name):
