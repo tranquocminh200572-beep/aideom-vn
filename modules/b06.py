@@ -33,6 +33,19 @@ IS_BENEFIT = [True, True, True, True, True, True, True, False]
 # Trọng số chuyên gia mặc định
 W_EXPERT = np.array([0.10, 0.10, 0.15, 0.20, 0.15, 0.15, 0.05, 0.10])
 
+# Map tên vùng -> tên ngắn ASCII (tránh lỗi font)
+REGION_SHORT = {
+    'Trung du miền núi phía Bắc': 'Trung du BB',
+    'Đồng bằng sông Hồng':        'DB song Hong',
+    'Bắc Trung Bộ + DH Trung Bộ': 'BTB+DHMT',
+    'Tây Nguyên':                  'Tay Nguyen',
+    'Đông Nam Bộ':                 'Dong Nam Bo',
+    'Đồng bằng sông Cửu Long':    'DB song CL',
+}
+
+def shorten(name):
+    return REGION_SHORT.get(name, name)
+
 REGION_NAMES = [
     'Trung du miền núi phía Bắc',
     'Đồng bằng sông Hồng',
@@ -125,11 +138,7 @@ def plot_ranking_bar(scores_exp, scores_ent, region_names):
         scores_ord = scores[order]
 
         # Tên ngắn cho hiển thị
-        short_names = [n.replace('Bắc Trung Bộ + DH Trung Bộ', 'BTB+DHMT')
-                        .replace('Trung du miền núi phía Bắc', 'Trung du M.Núi')
-                        .replace('Đồng bằng sông Hồng', 'ĐB sông Hồng')
-                        .replace('Đồng bằng sông Cửu Long', 'ĐB sông CL')
-                        for n in names_ord]
+        short_names = [shorten(n) for n in names_ord]
 
         bar_colors = [colors[i] for i in order]
         text_labels = []
@@ -185,10 +194,7 @@ def plot_sensitivity(X, region_names):
         rank_matrix[:, j] = ranks
 
     fig, ax = plt.subplots(figsize=(10, 5))
-    short_names = [n.replace('Bắc Trung Bộ + DH Trung Bộ', 'BTB+DHMT')
-                    .replace('Trung du miền núi phía Bắc', 'Trung du M.Núi')
-                    .replace('Đồng bằng sông Hồng', 'ĐB sông Hồng')
-                    .replace('Đồng bằng sông Cửu Long', 'ĐB sông CL') for n in region_names]
+    short_names = [shorten(n) for n in region_names]
     im = ax.imshow(rank_matrix, cmap='RdYlGn_r', aspect='auto', vmin=1, vmax=6)
     ax.set_xticks(range(len(w_ai_range)))
     ax.set_xticklabels([f'{w:.2f}' for w in w_ai_range], fontsize=9)
@@ -223,10 +229,7 @@ def plot_radar(X, w, region_names):
 
     fig, ax = plt.subplots(figsize=(7, 7), subplot_kw=dict(polar=True))
     colors = ['#1976D2','#388E3C','#F57C00','#7B1FA2','#D32F2F','#0097A7']
-    short_names = [n.replace('Bắc Trung Bộ + DH Trung Bộ', 'BTB+DHMT')
-                    .replace('Trung du miền núi phía Bắc', 'Trung du\nM.Núi')
-                    .replace('Đồng bằng sông Hồng', 'ĐB sông Hồng')
-                    .replace('Đồng bằng sông Cửu Long', 'ĐB sông CL') for n in region_names]
+    short_names = [shorten(n) for n in region_names]
 
     for i, (vals, color, name) in enumerate(zip(X_norm, colors, short_names)):
         v = vals.tolist() + [vals[0]]
@@ -291,10 +294,7 @@ def render():
         ranks_exp = len(region_names) - scores_expert.argsort().argsort()
         ranks_ent = len(region_names) - scores_entropy.argsort().argsort()
 
-        short = [n.replace('Bắc Trung Bộ + DH Trung Bộ', 'BTB+DHMT')
-                  .replace('Trung du miền núi phía Bắc', 'Trung du M.Núi')
-                  .replace('Đồng bằng sông Hồng', 'ĐB sông Hồng')
-                  .replace('Đồng bằng sông Cửu Long', 'ĐB sông CL') for n in region_names]
+        short = [shorten(n) for n in region_names]
 
         df_res = pd.DataFrame({
             'Vùng': short,
