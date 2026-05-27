@@ -8,6 +8,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
+matplotlib.rcParams['axes.unicode_minus'] = False
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import streamlit as st
 from pathlib import Path
 
@@ -106,39 +109,58 @@ def entropy_weights(X):
 
 
 def plot_ranking_bar(scores_exp, scores_ent, region_names):
-    """So sánh điểm TOPSIS hai bộ trọng số."""
-    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+    """So sánh điểm TOPSIS hai bộ trọng số — dùng Plotly để fix font tiếng Việt."""
     colors = ['#1976D2','#388E3C','#F57C00','#7B1FA2','#D32F2F','#0097A7']
 
-    for ax, scores, title, w_label in zip(
-        axes,
-        [scores_exp, scores_ent],
-        ['Trọng số chuyên gia', 'Trọng số Entropy'],
-        ['(w_AI=0.20)', '(khách quan)']
+    fig = make_subplots(rows=1, cols=2,
+                        subplot_titles=['Trọng số chuyên gia (w_AI=0.20)',
+                                        'Trọng số Entropy (khách quan)'])
+
+    for col_idx, (scores, title) in enumerate(
+        zip([scores_exp, scores_ent],
+            ['Chuyên gia', 'Entropy']), start=1
     ):
         order = np.argsort(scores)[::-1]
         names_ord = [region_names[i] for i in order]
         scores_ord = scores[order]
-        # Rút gọn tên
+
+        # Tên ngắn cho hiển thị
         short_names = [n.replace('Bắc Trung Bộ + DH Trung Bộ', 'BTB+DHMT')
                         .replace('Trung du miền núi phía Bắc', 'Trung du M.Núi')
                         .replace('Đồng bằng sông Hồng', 'ĐB sông Hồng')
-                        .replace('Đồng bằng sông Cửu Long', 'ĐB sông CL') for n in names_ord]
-        bars = ax.barh(short_names[::-1], scores_ord[::-1],
-                       color=[colors[i] for i in order[::-1]], alpha=0.85)
-        ax.set_xlabel('Điểm TOPSIS (C*)')
-        ax.set_title(f'{title}\n{w_label}', fontweight='bold', fontsize=11)
-        ax.set_xlim(0, 1.05)
-        for bar, val in zip(bars, scores_ord[::-1]):
-            ax.text(val + 0.01, bar.get_y() + bar.get_height()/2,
-                    f'{val:.3f}', va='center', fontsize=9)
-        # Đánh dấu top 3
-        for j, (bar, sc) in enumerate(zip(bars[::-1], scores_ord)):
-            if j < 3:
-                ax.text(0.01, bar.get_y() + bar.get_height()/2,
-                        f'#{j+1}', va='center', fontsize=9, color='white', fontweight='bold')
+                        .replace('Đồng bằng sông Cửu Long', 'ĐB sông CL')
+                        for n in names_ord]
 
-    plt.tight_layout()
+        bar_colors = [colors[i] for i in order]
+        text_labels = []
+        for j, (val, name) in enumerate(zip(scores_ord, short_names)):
+            rank_label = f'#{j+1} ' if j < 3 else ''
+            text_labels.append(f'{rank_label}{val:.3f}')
+
+        fig.add_trace(go.Bar(
+            x=scores_ord[::-1],
+            y=short_names[::-1],
+            orientation='h',
+            marker_color=bar_colors[::-1],
+            text=[f'{v:.3f}' for v in scores_ord[::-1]],
+            textposition='outside',
+            name=title,
+            showlegend=False,
+        ), row=1, col=col_idx)
+
+        # Annotation top 3
+        for j in range(min(3, len(scores_ord))):
+            fig.add_annotation(
+                x=0.02, y=short_names[::-1][-(j+1)],
+                text=f'#{j+1}',
+                showarrow=False,
+                font=dict(color='white', size=11, family='Arial'),
+                xref=f'x{col_idx}', yref=f'y{col_idx}',
+                xanchor='left',
+            )
+
+    fig.update_xaxes(title_text='Điểm TOPSIS (C*)', range=[0, 1.15])
+    fig.update_layout(height=400, margin=dict(t=60, b=20))
     return fig
 
 
@@ -306,7 +328,7 @@ def render():
         # ── Biểu đồ xếp hạng ──
         st.subheader("🏆 So sánh xếp hạng: Chuyên gia vs Entropy")
         fig1 = plot_ranking_bar(scores_expert, scores_entropy, region_names)
-        st.pyplot(fig1)
+        st.plotly_chart(fig1, use_container_width=True)
         plt.close(fig1)
 
         # ── Radar chart ──
